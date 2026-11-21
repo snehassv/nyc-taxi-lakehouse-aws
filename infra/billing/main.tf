@@ -41,6 +41,13 @@ resource "aws_budgets_budget" "monthly" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
+  # Count usage BEFORE credits. On the Free plan credits pay for everything,
+  # so a budget that includes credits would always show $0 and never alert.
+  cost_types {
+    include_credit = false
+    include_refund = false
+  }
+
   # Email at $1 actual spend (20% of $5) - an early warning.
   notification {
     comparison_operator        = "GREATER_THAN"
