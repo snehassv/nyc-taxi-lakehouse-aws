@@ -1,0 +1,14 @@
+.env
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+# Airflow
+airflow/logs/

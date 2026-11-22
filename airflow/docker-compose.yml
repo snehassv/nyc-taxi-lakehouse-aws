@@ -1,0 +1,26 @@
+# A single-container Airflow for a laptop: `airflow standalone` runs the
+# scheduler, API server and a SQLite database together. Fine for a demo,
+# not for production.
+#
+# AWS access: your ~/.aws folder is mounted and AWS_PROFILE picks the
+# profile. Keys never go into this repo.
+
+services:
+  airflow:
+    build: .
+    command: standalone
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env            # made by `make env` from Terraform outputs
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"   # local only: no login screen
+      AWS_PROFILE: ${AWS_PROFILE:-nyc-taxi}
+      PYTHONPATH: /opt/project
+      TAXI_CACHE_DIR: /opt/project/data/raw
+      TAXI_RESULTS_DIR: /opt/project/results
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ..:/opt/project
+      - ${HOME}/.aws:/home/airflow/.aws   # not read-only: aws login refreshes its cache here
