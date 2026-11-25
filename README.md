@@ -2,13 +2,16 @@
 
 ## The problem
 
-NYC's taxi trip files changed shape over the years: new columns were added
-(`congestion_surcharge`, `airport_fee`, `cbd_congestion_fee`), one column changed
-its letter case (`airport_fee` → `Airport_fee`), and number types changed between
-files. A simple "read all files and load them" job either fails or quietly drops
-columns. This project loads 15 years of files into **one** Apache Iceberg table
-without losing data, then measures how much partitioning cuts the data (and money)
-each Athena query scans.
+NYC's taxi trip files don't keep the same columns from year to year. In the 15 January
+files from 2011 to 2025, `passenger_count` and `RatecodeID` change from `int64` to `double`
+(2019) and back to `int64` (2024); the location and vendor IDs shrink from `int64` to `int32`
+(2024); `airport_fee` becomes `Airport_fee` (2024); fee columns that didn't exist yet are
+stored as empty columns with different types in different years; and `cbd_congestion_fee`
+appears for the first time in 2025. A simple "read all files and load them" job either fails
+or quietly gets columns wrong. This project loads all 15 files into **one** Apache Iceberg
+table without losing data, then measures how much partitioning cuts the data (and money)
+each Athena query scans. The full column-by-year table is in
+[`results/raw_schema_diff.md`](results/raw_schema_diff.md).
 
 ## Architecture
 
@@ -43,6 +46,7 @@ what to do with each column, using Iceberg schema evolution:
 | A new column | `ALTER TABLE ... ADD COLUMN` (old rows read `NULL`) |
 | A missing column | writes `NULL` for it |
 | A smaller number type than the table (int vs bigint) | casts it up, no data lost |
+| `double` where the table has `bigint` (`passenger_count`, 2019) | checks every value is a whole number, then converts; stops if any value has a fraction |
 | A bigger number type than the table (bigint vs int) | promotes the table column (`ALTER COLUMN ... TYPE bigint`) |
 | A column that is empty in every row | ignores its type, so it can't block real values later |
 | A different letter case (`Airport_fee`) | names are lower-cased, so it lands in `airport_fee` |
