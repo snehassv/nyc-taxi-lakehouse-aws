@@ -1,0 +1,4 @@
+pyspark==3.5.4   # same Spark version as AWS Glue 5.0
+pyarrow
+boto3[crt]      # [crt] is needed to use `aws login` sessions
+pytest
